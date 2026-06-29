@@ -14,7 +14,7 @@ const AiChat = () => {
 
   const handleToggle = () => {
     setOpen((prev) => !prev);
-    if (!open) setTimeout(() => inputRef.current?.focus(), 100);
+    if (!open) setTimeout(() => inputRef.current?.focus(), 300);
   };
 
   const applyFilters = (filters) => {
@@ -82,59 +82,58 @@ const AiChat = () => {
   };
 
   return (
-    <div className="ai-chat-wrapper">
-      {open && (
-        <div className="ai-chat-panel">
-          <div className="ai-chat-header">
-            <FaRobot className="ai-chat-header-icon" />
-            <span>AI Assistant</span>
-            <button className="ai-chat-close" onClick={handleToggle} aria-label="Close">
-              <FaTimes />
-            </button>
-          </div>
+    <>
+      <div
+        className={`ai-drawer-overlay ${open ? "ai-drawer-overlay--visible" : ""}`}
+        onClick={handleToggle}
+      />
 
-          <div className="ai-chat-body">
-            <p className="ai-chat-hint">
-              Describe what you're looking for and I'll filter the catalog for you.
-            </p>
-
-            {summary && (
-              <div className="ai-chat-summary">
-                <span>{summary}</span>
-                <button className="ai-chat-reset" onClick={handleReset}>
-                  Clear filters
-                </button>
-              </div>
-            )}
-
-            {error && <div className="ai-chat-error">{error}</div>}
-          </div>
-
-          <form className="ai-chat-form" onSubmit={handleSubmit}>
-            <input
-              ref={inputRef}
-              className="ai-chat-input"
-              type="text"
-              placeholder="e.g. cheap gaming laptop under $800"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={loading}
-            />
-            <button
-              className="ai-chat-send"
-              type="submit"
-              disabled={loading || !input.trim()}
-              aria-label="Send"
-            >
-              {loading ? (
-                <span className="ai-chat-spinner" />
-              ) : (
-                <FaPaperPlane />
-              )}
-            </button>
-          </form>
+      <aside className={`ai-drawer ${open ? "ai-drawer--open" : ""}`}>
+        <div className="ai-drawer-header">
+          <FaRobot className="ai-drawer-header-icon" />
+          <span>AI Assistant</span>
+          <button className="ai-drawer-close" onClick={handleToggle} aria-label="Close">
+            <FaTimes />
+          </button>
         </div>
-      )}
+
+        <div className="ai-drawer-body">
+          <p className="ai-drawer-hint">
+            Describe what you're looking for and I'll filter the catalog for you.
+          </p>
+
+          {summary && (
+            <div className="ai-drawer-summary">
+              <span>{summary}</span>
+              <button className="ai-drawer-reset" onClick={handleReset}>
+                Clear filters
+              </button>
+            </div>
+          )}
+
+          {error && <div className="ai-drawer-error">{error}</div>}
+        </div>
+
+        <form className="ai-drawer-form" onSubmit={handleSubmit}>
+          <input
+            ref={inputRef}
+            className="ai-drawer-input"
+            type="text"
+            placeholder="e.g. cheap gaming laptop under $800"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            disabled={loading}
+          />
+          <button
+            className="ai-drawer-send"
+            type="submit"
+            disabled={loading || !input.trim()}
+            aria-label="Send"
+          >
+            {loading ? <span className="ai-drawer-spinner" /> : <FaPaperPlane />}
+          </button>
+        </form>
+      </aside>
 
       <button
         className={`ai-chat-fab ${open ? "active" : ""}`}
@@ -142,8 +141,9 @@ const AiChat = () => {
         aria-label="AI Assistant"
       >
         <FaRobot />
+        <span className="ai-chat-fab-label">AI</span>
       </button>
-    </div>
+    </>
   );
 };
 

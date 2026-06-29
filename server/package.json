@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node index.js",
     "build": "npx sequelize-cli db:migrate",
-    "dev": "sh -c 'lsof -ti:${PORT:-8000} | xargs -r kill -9 2>/dev/null; nodemon index.js'"
+    "dev": "sh -c 'lsof -ti:${PORT:-9000} | xargs -r kill -9 2>/dev/null; nodemon index.js'"
   },
   "keywords": [],
   "author": "",

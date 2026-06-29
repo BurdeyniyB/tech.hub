@@ -9,6 +9,7 @@ import AdminOrders from "../components/admin/AdminOrders";
 import AdminMarketplace from "../components/admin/AdminMarketplace";
 import AdminDashboard from "../components/admin/AdminDashboard";
 import AdminDiscounts from "../components/admin/AdminDiscounts";
+import AdminAiChat from "../components/admin/AdminAiChat";
 import "../style/Admin.css";
 
 const NAV_ITEMS = [
@@ -48,6 +49,7 @@ const Admin = () => {
 
         {activeTab === "discounts" && <AdminDiscounts />}
       </main>
+      <AdminAiChat />
     </div>
   );
 };
