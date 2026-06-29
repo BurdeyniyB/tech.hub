@@ -7,6 +7,12 @@ import { Context } from "..";
 import { observer } from "mobx-react-lite";
 import { FaShoppingCart, FaChevronDown } from "react-icons/fa";
 import DeviceItem from "../components/DeviceItem";
+import RecentlyViewed from "../components/RecentlyViewed";
+import StockAlertForm from "../components/StockAlertForm";
+import Toast from "../components/Toast";
+import { useToast } from "../hooks/useToast";
+import { FaShareAlt } from "react-icons/fa";
+import { DEVICE_ROUTE } from "../utils/const";
 import "../style/DevicePage.css";
 
 const EXCLUDED_SPEC_KEYS = new Set([
@@ -98,10 +104,22 @@ const DevicePage = observer(() => {
   const description = getDescription(device);
 
   const isClamped = !specsExpanded && galleryHeight !== null;
+  const { showToast, toastVisible, toastMessage } = useToast();
+
+  const handleShare = () => {
+    const url = `${window.location.origin}${DEVICE_ROUTE}/${id}`;
+    navigator.clipboard.writeText(url).then(() => showToast("Link copied!"));
+  };
 
   return (
     <Container className="device-page">
-      <h1 className="page-product-title">{device.name}</h1>
+      <div className="page-product-title-row">
+        <h1 className="page-product-title">{device.name}</h1>
+        <button className="share-btn" onClick={handleShare} title="Copy link">
+          <FaShareAlt />
+        </button>
+      </div>
+      <Toast visible={toastVisible} message={toastMessage} />
 
       <div className="device-layout">
         {/* Left: gallery */}
@@ -146,14 +164,19 @@ const DevicePage = observer(() => {
 
           <div className="device-price-row">
             <span className="device-price">{device.price} $</span>
-            <Button
-              variant="outline-dark"
-              className="add-to-basket"
-              onClick={addDeviceToBasket}
-            >
-              <FaShoppingCart size={18} />
-            </Button>
+            {device.inStock !== false && (
+              <Button
+                variant="outline-dark"
+                className="add-to-basket"
+                onClick={addDeviceToBasket}
+              >
+                <FaShoppingCart size={18} />
+              </Button>
+            )}
           </div>
+          {device.inStock === false && (
+            <StockAlertForm deviceId={device.id} />
+          )}
 
           {specEntries.length > 0 && (
             <div className="device-characteristics">
@@ -215,6 +238,8 @@ const DevicePage = observer(() => {
           </div>
         </div>
       )}
+
+      <RecentlyViewed excludeId={id} />
     </Container>
   );
 });

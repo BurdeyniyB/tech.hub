@@ -6,11 +6,22 @@ import "../style/App.css";
 import { observer } from "mobx-react-lite";
 import { Context } from "..";
 import { addToBasket } from "../http/basketAPI";
-import { FaShoppingCart, FaStar, FaStarHalfAlt, FaRegStar } from "react-icons/fa";
+import { FaShoppingCart, FaStar, FaStarHalfAlt, FaRegStar, FaHeart, FaRegHeart, FaShareAlt } from "react-icons/fa";
+import StockAlertForm from "./StockAlertForm";
+import Toast from "./Toast";
+import { useToast } from "../hooks/useToast";
 
 const DeviceItem = observer(({ device }) => {
   const navigate = useNavigate();
-  const { user, basket } = useContext(Context);
+  const { user, basket, wishlist } = useContext(Context);
+  const isWished = wishlist.has(device.id);
+  const { showToast, toastVisible, toastMessage } = useToast();
+
+  const handleShare = (e) => {
+    e.stopPropagation();
+    const url = `${window.location.origin}${DEVICE_ROUTE}/${device.id}`;
+    navigator.clipboard.writeText(url).then(() => showToast("Link copied!"));
+  };
   
   const addDeviceToBasket = async (e) => {
     e.stopPropagation(); // Щоб не переходило на сторінку товару при натисканні на кнопку
@@ -80,6 +91,17 @@ const DeviceItem = observer(({ device }) => {
           alt={device.name}
           className="device-image-main"
         />
+        <button
+          className={`wish-btn${isWished ? " wish-btn--active" : ""}`}
+          onClick={(e) => { e.stopPropagation(); wishlist.toggle(device); }}
+          aria-label={isWished ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          {isWished ? <FaHeart /> : <FaRegHeart />}
+        </button>
+        <button className="share-btn share-btn--card" onClick={handleShare} aria-label="Copy link">
+          <FaShareAlt />
+        </button>
+        <Toast visible={toastVisible} message={toastMessage} />
       </div>
       <div className="device-name">
         <span className="device-name-title">{title}</span>
@@ -113,14 +135,17 @@ const DeviceItem = observer(({ device }) => {
         )}
       </div>
 
-      <Button
-        onClick={addDeviceToBasket}
-        className="basket-button"
-        variant="gray"
-        disabled={!device.inStock}
-      >
-        <FaShoppingCart />
-      </Button>
+      {device.inStock ? (
+        <Button
+          onClick={addDeviceToBasket}
+          className="basket-button"
+          variant="gray"
+        >
+          <FaShoppingCart />
+        </Button>
+      ) : (
+        <StockAlertForm deviceId={device.id} compact />
+      )}
     </Card>
   );
 });

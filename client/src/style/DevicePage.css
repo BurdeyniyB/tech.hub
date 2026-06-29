@@ -6,11 +6,19 @@
 }
 
 /* ── Full-width title ── */
+.page-product-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .page-product-title {
   font-size: 26px;
   font-weight: 700;
   line-height: 1.3;
-  margin-bottom: 16px;
+  margin: 0;
+  flex: 1;
 }
 
 /* ── Main layout ── */
@@ -267,40 +275,48 @@
 }
 
 /* ── Similar products ── */
-.similar-section {
+.similar-section,
+.recently-section {
   margin-top: 40px;
 }
 
-.similar-title {
+.similar-title,
+.recently-title {
   font-size: 20px;
   font-weight: 700;
   margin-bottom: 16px;
 }
 
-.similar-list {
+.similar-list,
+.recently-list {
   display: flex;
+  align-items: stretch;
   gap: 12px;
   overflow-x: auto;
   padding-bottom: 8px;
 }
 
-.similar-list::-webkit-scrollbar {
+.similar-list::-webkit-scrollbar,
+.recently-list::-webkit-scrollbar {
   height: 5px;
 }
 
-.similar-list::-webkit-scrollbar-thumb {
+.similar-list::-webkit-scrollbar-thumb,
+.recently-list::-webkit-scrollbar-thumb {
   background: #ccc;
   border-radius: 4px;
 }
 
-.similar-item {
+.similar-item,
+.recently-item {
   flex-shrink: 0;
   width: 220px;
 }
 
-.similar-item .device-card {
+.similar-item .device-card,
+.recently-item .device-card {
   width: 100%;
-  max-width: 100%;
+  height: 100%;
 }
 
 /* ── Specs "see more" (device page only) ── */
