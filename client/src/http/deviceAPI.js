@@ -57,3 +57,8 @@ export const aiSearch = async (message, types, brands) => {
   const { data } = await $host.post("api/ai/search", { message, types, brands });
   return data;
 };
+
+export const subscribeStockAlert = async (deviceId, email) => {
+  const { data } = await $host.post(`api/device/${deviceId}/notify`, { email });
+  return data;
+};

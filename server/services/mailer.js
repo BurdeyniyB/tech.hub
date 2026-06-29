@@ -193,4 +193,71 @@ async function sendOrderConfirmation(order, items) {
   console.log(`[mailer] email sent to ${order.email} — messageId: ${info.messageId}`);
 }
 
-module.exports = { sendOrderConfirmation };
+async function sendStockAlert(email, device) {
+  if (!process.env.SMTP_HOST || !process.env.SMTP_USER) return;
+  const name = device.name.split(",")[0];
+  const price = device.sale > 0
+    ? `$${(device.price * (1 - device.sale / 100)).toFixed(2)}`
+    : `$${Number(device.price).toFixed(2)}`;
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:40px 0;">
+    <tr><td>
+      <table width="600" cellpadding="0" cellspacing="0" align="center"
+             style="background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.10);max-width:600px;">
+        <tr>
+          <td style="background:#1a1a2e;padding:28px 40px;text-align:center;">
+            <h1 style="color:#fff;margin:0;font-size:22px;letter-spacing:3px;">ONLINE STORE</h1>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:linear-gradient(135deg,#ffa500,#ff8c00);padding:22px 40px;text-align:center;">
+            <p style="color:#fff;margin:0;font-size:13px;letter-spacing:1px;text-transform:uppercase;opacity:.85;">Back in Stock</p>
+            <h2 style="color:#fff;margin:8px 0 0;font-size:20px;font-weight:700;">Good news!</h2>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 40px;">
+            <p style="color:#222;font-size:16px;margin:0 0 16px;">
+              An item on your watchlist is now available:
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0"
+                   style="background:#f8f8f8;border-radius:8px;margin-bottom:28px;">
+              <tr>
+                <td style="padding:18px 20px;">
+                  <p style="margin:0 0 4px;font-size:16px;font-weight:700;color:#1a1a2e;">${name}</p>
+                  <p style="margin:0;font-size:18px;font-weight:700;color:#ffa500;">${price}</p>
+                </td>
+              </tr>
+            </table>
+            <p style="color:#666;font-size:14px;line-height:1.6;margin:0 0 8px;">
+              Hurry — stock may be limited. Visit our store to order now.
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="background:#f9f9f9;padding:20px 40px;text-align:center;border-top:1px solid #eee;">
+            <p style="color:#aaa;font-size:12px;margin:0;">
+              You received this because you subscribed to stock alerts for this item.
+            </p>
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+  await transporter.sendMail({
+    from: `"Online Store" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: email,
+    subject: `✅ ${name} is back in stock!`,
+    html,
+  });
+  console.log(`[mailer] stock alert sent to ${email} for "${name}"`);
+}
+
+module.exports = { sendOrderConfirmation, sendStockAlert };

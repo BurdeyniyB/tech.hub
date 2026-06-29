@@ -113,6 +113,13 @@ const Address = sequelize.define("address", {
   phone_number: { type: DataTypes.STRING, allowNull: false },
 });
 
+const StockAlert = sequelize.define("stock_alert", {
+  id:    { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  email: { type: DataTypes.STRING,  allowNull: false },
+}, {
+  indexes: [{ unique: true, fields: ["deviceId", "email"] }],
+});
+
 // 🔗 **Зв’язки**
 User.hasOne(Basket);
 Basket.belongsTo(User);
@@ -150,6 +157,9 @@ Order.belongsTo(User);
 User.hasMany(Address);
 Address.belongsTo(User);
 
+Device.hasMany(StockAlert);
+StockAlert.belongsTo(Device);
+
 module.exports = {
   User,
   Basket,
@@ -163,4 +173,5 @@ module.exports = {
   OrderDevice,
   Address,
   PromoCode,
+  StockAlert,
 };

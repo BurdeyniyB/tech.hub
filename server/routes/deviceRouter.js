@@ -9,5 +9,6 @@ router.get("/", deviceController.getAll);
 router.get("/:id", deviceController.getOne);
 router.put("/:id", checkRole("ADMIN"), deviceController.update);
 router.delete("/:id", checkRole("ADMIN"), deviceController.remove);
+router.post("/:id/notify", deviceController.subscribeStockAlert);
 
 module.exports = router;

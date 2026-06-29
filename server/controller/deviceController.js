@@ -1,7 +1,8 @@
 const uuid = require("uuid");
 const path = require("path");
 const sequelize = require("../db");
-const { Device, DeviceInfo } = require("../models/models");
+const { Device, DeviceInfo, StockAlert } = require("../models/models");
+const { sendStockAlert } = require("../services/mailer");
 const ApiError = require("../error/ApiError");
 const { Op, literal } = require("sequelize");
 
@@ -160,6 +161,8 @@ class DeviceController {
       const device = await Device.findOne({ where: { id } });
       if (!device) return next(ApiError.badRequest("Device not found"));
 
+      const wasOutOfStock = !device.inStock;
+
       if (name !== undefined) device.name = name;
       if (description !== undefined) device.description = description;
       if (price !== undefined) device.price = Number(price);
@@ -186,7 +189,35 @@ class DeviceController {
         );
       }
 
+      // Send stock alerts if device just came back in stock
+      if (wasOutOfStock && device.inStock) {
+        const alerts = await StockAlert.findAll({ where: { deviceId: id } });
+        if (alerts.length) {
+          await Promise.allSettled(alerts.map((a) => sendStockAlert(a.email, device)));
+          await StockAlert.destroy({ where: { deviceId: id } });
+          console.log(`[stock-alert] notified ${alerts.length} subscriber(s) for device #${id}`);
+        }
+      }
+
       return res.json(device);
+    } catch (error) {
+      next(ApiError.badRequest(error.message));
+    }
+  }
+
+  async subscribeStockAlert(req, res, next) {
+    try {
+      const { id } = req.params;
+      const { email } = req.body;
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: "Valid email is required" });
+      }
+      const device = await Device.findOne({ where: { id } });
+      if (!device) return res.status(404).json({ error: "Device not found" });
+      if (device.inStock) return res.status(400).json({ error: "Device is already in stock" });
+
+      await StockAlert.findOrCreate({ where: { deviceId: id, email } });
+      return res.json({ ok: true });
     } catch (error) {
       next(ApiError.badRequest(error.message));
     }
