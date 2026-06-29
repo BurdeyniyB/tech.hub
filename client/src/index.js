@@ -5,6 +5,7 @@ import UserStore from "./store/UserStore";
 import DeviceStore from "./store/DeviceStore";
 import BasketStore from "./store/BasketStore";
 import OrderStore from "./store/OrderStore";
+import WishlistStore from "./store/WishlistStore";
 
 export const Context = createContext(null);
 console.log(process.env.REACT_APP_API_URL);
@@ -17,6 +18,7 @@ root.render(
         device: new DeviceStore(),
         basket: new BasketStore(),
         order: new OrderStore(),
+        wishlist: new WishlistStore(),
       }}
     >
       <App />

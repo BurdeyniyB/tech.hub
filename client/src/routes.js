@@ -6,7 +6,8 @@ import DevicePage from "./pages/DevicePage";
 import Store from "./pages/Store";
 import Index from "./pages/Index";
 import OrderResult from "./pages/OrderResult";
-import { ADMIN_ROUTE, BASKET_ROUTE, CHECKOUT_ROUTE, STORE_ROUTE, DEVICE_ROUTE, LOGIN_ROUTE, REGISTER_ROUTE, INDEX_ROUTE, ORDER_RESULT_ROUTE } from "./utils/const";
+import Wishlist from "./pages/Wishlist";
+import { ADMIN_ROUTE, BASKET_ROUTE, CHECKOUT_ROUTE, STORE_ROUTE, DEVICE_ROUTE, LOGIN_ROUTE, REGISTER_ROUTE, INDEX_ROUTE, ORDER_RESULT_ROUTE, WISHLIST_ROUTE } from "./utils/const";
 
 export const authRoutes = [
   {
@@ -47,5 +48,9 @@ export const publicRoutes = [
   {
     path: ORDER_RESULT_ROUTE,
     Component: OrderResult,
+  },
+  {
+    path: WISHLIST_ROUTE,
+    Component: Wishlist,
   },
 ];

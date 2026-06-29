@@ -272,3 +272,8 @@
     display: flex;
   }
 }
+
+.wishlist-badge {
+  background-color: #ef4444 !important;
+  color: #fff !important;
+}

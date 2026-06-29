@@ -6,6 +6,7 @@ import {
   INDEX_ROUTE,
   LOGIN_ROUTE,
   STORE_ROUTE,
+  WISHLIST_ROUTE,
 } from "../utils/const";
 import { Context } from "..";
 import { observer } from "mobx-react-lite";
@@ -18,17 +19,19 @@ import {
   FaListUl,
   FaBars,
   FaTimes,
+  FaHeart,
 } from "react-icons/fa";
 import { fetchBasket } from "../http/basketAPI";
 import "../style/NavBar.css";
 import Filter from "./Filter";
 
 const NavBar = observer(() => {
-  const { user, basket } = useContext(Context);
+  const { user, basket, wishlist } = useContext(Context);
   const basketCount = basket.basketDevices.reduce(
     (sum, item) => sum + (item.quantity || 1),
     0,
   );
+  const wishlistCount = wishlist.count;
   const [menuOpen, setMenuOpen] = useState(false);
   const [basketLoaded, setBasketLoaded] = useState(false);
 
@@ -75,6 +78,18 @@ const NavBar = observer(() => {
             >
               <FaListUl size={20} />
             </button>
+            <div className="basket-btn-wrapper">
+              <button
+                className="custom-button"
+                title="Wishlist"
+                onClick={() => navigate(WISHLIST_ROUTE)}
+              >
+                <FaHeart size={20} />
+              </button>
+              {wishlistCount > 0 && (
+                <span className="basket-badge wishlist-badge">{wishlistCount}</span>
+              )}
+            </div>
             <div className="basket-btn-wrapper">
               <button
                 className="custom-button"
@@ -167,6 +182,18 @@ const NavBar = observer(() => {
         >
           <FaListUl size={24} />
         </button>
+        <div className="basket-btn-wrapper">
+          <button
+            className="mobile-button"
+            title="Wishlist"
+            onClick={() => navigate(WISHLIST_ROUTE)}
+          >
+            <FaHeart size={24} />
+          </button>
+          {wishlistCount > 0 && (
+            <span className="basket-badge wishlist-badge">{wishlistCount}</span>
+          )}
+        </div>
         <div className="basket-btn-wrapper">
           <button
             className="mobile-button"
