@@ -8,6 +8,7 @@ import "../style/App.css";
 import { FaSearch } from "react-icons/fa";
 import Filter from "../components/Filter";
 import AiChat from "../components/AiChat";
+import RecentlyViewed from "../components/RecentlyViewed";
 
 const Store = observer(() => {
   const { device } = useContext(Context);
@@ -139,6 +140,7 @@ const Store = observer(() => {
             </span>
           </div>
           <Pages onLoadMore={() => { appendNextFetch.current = true; }} />
+          <RecentlyViewed />
         </main>
       </div>
       <AiChat />
