@@ -1,160 +1,245 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Button, Modal, Form, Dropdown, Row, Col } from "react-bootstrap";
 import { Context } from "../../";
-import { createDevice, fetchBrands, fetchDevices, fetchTypes } from "../../http/deviceAPI";
+import { createDevice, fetchBrands, fetchTypes } from "../../http/deviceAPI";
 import { observer } from "mobx-react-lite";
+import { MdClose, MdAdd, MdDelete, MdCloudUpload } from "react-icons/md";
 
 const CreateDevice = observer(({ show, onHide }) => {
   const { device } = useContext(Context);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [price, setPrice] = useState(0);
+  const [price, setPrice] = useState("");
+  const [sale, setSale] = useState("");
+  const [inStock, setInStock] = useState(true);
   const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [info, setInfo] = useState([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (!show) return;
     fetchTypes().then((data) => device.setTypes(data));
     fetchBrands().then((data) => device.setBrands(data));
-    fetchDevices().then((data) => device.setDevices(data.rows));
-  }, [device]);
+  }, [show, device]);
 
-  const addInfo = () => {
-    setInfo([...info, { title: "", description: "", number: Date.now() }]);
-  };
+  useEffect(() => {
+    if (show) return;
+    setName(""); setDescription(""); setPrice(""); setSale("");
+    setInStock(true); setFile(null); setPreview(null); setInfo([]);
+  }, [show]);
 
-  const removeInfo = (number) => {
-    setInfo(info.filter((i) => i.number !== number));
-  };
-
-  const changeInfo = (key, value, number) => {
-    setInfo(
-      info.map((i) => (i.number === number ? { ...i, [key]: value } : i))
-    );
-  };
+  useEffect(() => {
+    if (!show) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [show]);
 
   const selectFile = (e) => {
-    setFile(e.target.files[0]);
+    const f = e.target.files[0];
+    if (!f) return;
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
   };
 
-  const addDivece = () => {
-    const formData = new FormData()
-    formData.append('name', name);
-    formData.append('description', description);
-    formData.append('price', `${price}`);
-    formData.append('img', file);
-    formData.append('brandId', device.selectedBrand.id)
-    formData.append('typeId', device.selectedType.id)
-    formData.append('info', JSON.stringify(info))
-    createDevice(formData).then(data => onHide())
+  const addInfo = () =>
+    setInfo((prev) => [...prev, { title: "", description: "", number: Date.now() }]);
+  const removeInfo = (number) =>
+    setInfo((prev) => prev.filter((i) => i.number !== number));
+  const changeInfo = (key, value, number) =>
+    setInfo((prev) => prev.map((i) => (i.number === number ? { ...i, [key]: value } : i)));
+
+  const handleSubmit = async () => {
+    setSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("description", description);
+      formData.append("price", String(price));
+      if (sale) formData.append("sale", String(sale));
+      formData.append("inStock", String(inStock));
+      formData.append("img", file);
+      formData.append("brandId", device.selectedBrand.id);
+      formData.append("typeId", device.selectedType.id);
+      formData.append("info", JSON.stringify(info));
+      await createDevice(formData);
+      onHide();
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (!show) return null;
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered>
-      <Modal.Header closeButton>
-        <Modal.Title id="contained-modal-title-vcenter">
-          Add new list
-        </Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form>
-          <Dropdown className="mt-2">
-            <Dropdown.Toggle>
-              {device.selectedType.name || "Chose type"}
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              {device.types.map((type) => (
-                <Dropdown.Item
-                  onClick={() => device.setSelectedType(type)}
-                  key={type.id}
-                >
-                  {type.name}
-                </Dropdown.Item>
-              ))}
-            </Dropdown.Menu>
-          </Dropdown>
-          <Dropdown className="mt-2">
-            <Dropdown.Toggle>
-              {device.selectedBrand.name || "Chose brand"}
-            </Dropdown.Toggle>
-            <Dropdown.Menu>
-              {device.brands.map((brand) => (
-                <Dropdown.Item
-                  onClick={() => device.setSelectedBrand(brand)}
-                  key={brand.id}
-                >
-                  {brand.name}
-                </Dropdown.Item>
-              ))}
-            </Dropdown.Menu>
-          </Dropdown>
-          <Form.Control
-            className="mt-3"
-            placeholder="Enter name of the device"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <Form.Control
-            className="mt-3"
-            placeholder="Enter the description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <Form.Control
-            className="mt-3"
-            placeholder="Enter a price of device"
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(Number(e.target.value))}
-          />
-          <Form.Control
-            className="mt-3"
-            placeholder="Upload picture of device"
-            type="file"
-            onChange={selectFile}
-          />
-          <hr />
-          <Button variant="outline-dark" onClick={addInfo}>
-            Add new property
-          </Button>
+    <div className="cd-overlay" onClick={onHide}>
+      <div className="cd-modal" onClick={(e) => e.stopPropagation()}>
+
+        <div className="cd-header">
+          <span className="cd-title">Add Device</span>
+          <button className="cd-close" onClick={onHide} aria-label="Close">
+            <MdClose />
+          </button>
+        </div>
+
+        <div className="cd-body">
+          <div className="cd-row-2">
+            <div className="cd-field">
+              <label className="cd-label">Type</label>
+              <select
+                className="cd-select"
+                value={device.selectedType?.id || ""}
+                onChange={(e) => {
+                  const t = device.types.find((t) => String(t.id) === e.target.value);
+                  if (t) device.setSelectedType(t);
+                }}
+              >
+                <option value="">Choose type</option>
+                {device.types.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="cd-field">
+              <label className="cd-label">Brand</label>
+              <select
+                className="cd-select"
+                value={device.selectedBrand?.id || ""}
+                onChange={(e) => {
+                  const b = device.brands.find((b) => String(b.id) === e.target.value);
+                  if (b) device.setSelectedBrand(b);
+                }}
+              >
+                <option value="">Choose brand</option>
+                {device.brands.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="cd-field">
+            <label className="cd-label">Name</label>
+            <input
+              className="cd-input"
+              placeholder="e.g. Samsung Galaxy S24, 256GB"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+
+          <div className="cd-field">
+            <label className="cd-label">Description</label>
+            <textarea
+              className="cd-textarea"
+              placeholder="Product description…"
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+
+          <div className="cd-row-2">
+            <div className="cd-field">
+              <label className="cd-label">Price ($)</label>
+              <input
+                className="cd-input"
+                type="number"
+                min={0}
+                placeholder="0.00"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+              />
+            </div>
+            <div className="cd-field">
+              <label className="cd-label">Sale (%)</label>
+              <input
+                className="cd-input"
+                type="number"
+                min={0}
+                max={100}
+                placeholder="0"
+                value={sale}
+                onChange={(e) => setSale(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <label className="cd-checkbox-row">
+            <input
+              type="checkbox"
+              checked={inStock}
+              onChange={(e) => setInStock(e.target.checked)}
+            />
+            <span>In Stock</span>
+          </label>
+
+          <div className="cd-field">
+            <label className="cd-label">Image</label>
+            <label className="cd-upload">
+              {preview ? (
+                <img src={preview} alt="preview" className="cd-upload-preview" />
+              ) : (
+                <>
+                  <MdCloudUpload className="cd-upload-icon" />
+                  <span className="cd-upload-hint">Click to upload</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="cd-upload-input"
+                onChange={selectFile}
+              />
+            </label>
+          </div>
+
+          <div className="cd-specs-header">
+            <span className="cd-label" style={{ margin: 0 }}>Specifications</span>
+            <button className="cd-add-spec" type="button" onClick={addInfo}>
+              <MdAdd /> Add property
+            </button>
+          </div>
+
           {info.map((i) => (
-            <Row className="mt-2" key={i.number}>
-              <Col md={4}>
-                <Form.Control
-                  value={i.title}
-                  onChange={(e) => changeInfo("title", e.target.value, i.number)}
-                  placeholder="Enter name of characteristic"
-                />
-              </Col>
-              <Col md={4}>
-                <Form.Control
-                  value={i.description}
-                  onChange={(e) =>
-                    changeInfo("description", e.target.value, i.number)
-                  }
-                  placeholder="Enter description"
-                />
-              </Col>
-              <Col md={4}>
-                <Button
-                  onClick={() => removeInfo(i.number)}
-                  variant="outline-danger"
-                >
-                  Delete
-                </Button>
-              </Col>
-            </Row>
+            <div key={i.number} className="cd-spec-row">
+              <input
+                className="cd-input"
+                placeholder="Property name"
+                value={i.title}
+                onChange={(e) => changeInfo("title", e.target.value, i.number)}
+              />
+              <input
+                className="cd-input"
+                placeholder="Value"
+                value={i.description}
+                onChange={(e) => changeInfo("description", e.target.value, i.number)}
+              />
+              <button
+                className="cd-spec-remove"
+                type="button"
+                onClick={() => removeInfo(i.number)}
+              >
+                <MdDelete />
+              </button>
+            </div>
           ))}
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="outline-danger" onClick={onHide}>
-          Close
-        </Button>
-        <Button variant="outline-success" onClick={addDivece}>
-          Add
-        </Button>
-      </Modal.Footer>
-    </Modal>
+        </div>
+
+        <div className="cd-footer">
+          <button className="cd-btn-cancel" onClick={onHide} disabled={saving}>
+            Cancel
+          </button>
+          <button
+            className="cd-btn-submit"
+            onClick={handleSubmit}
+            disabled={saving || !name.trim() || !price}
+          >
+            {saving ? "Adding…" : "Add Device"}
+          </button>
+        </div>
+
+      </div>
+    </div>
   );
 });
 

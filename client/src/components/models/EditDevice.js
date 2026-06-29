@@ -1,14 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Form, Button, Row, Col, Dropdown } from "react-bootstrap";
 import { updateDevice, fetchBrands, fetchTypes } from "../../http/deviceAPI";
+import { MdClose, MdCloudUpload } from "react-icons/md";
 
 const EditDevice = ({ device, onHide }) => {
   const [name, setName] = useState(device.name || "");
   const [description, setDescription] = useState(device.description || "");
-  const [price, setPrice] = useState(device.price || 0);
-  const [sale, setSale] = useState(device.sale || 0);
+  const [price, setPrice] = useState(device.price || "");
+  const [sale, setSale] = useState(device.sale || "");
   const [inStock, setInStock] = useState(device.inStock ?? true);
   const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [brands, setBrands] = useState([]);
   const [types, setTypes] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState({ id: device.brandId, name: "" });
@@ -28,6 +29,18 @@ const EditDevice = ({ device, onHide }) => {
     });
   }, [device.brandId, device.typeId]);
 
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  const selectFile = (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -35,7 +48,7 @@ const EditDevice = ({ device, onHide }) => {
       formData.append("name", name);
       formData.append("description", description);
       formData.append("price", String(price));
-      formData.append("sale", String(sale));
+      formData.append("sale", String(sale || 0));
       formData.append("inStock", String(inStock));
       if (selectedBrand.id) formData.append("brandId", String(selectedBrand.id));
       if (selectedType.id) formData.append("typeId", String(selectedType.id));
@@ -49,135 +62,149 @@ const EditDevice = ({ device, onHide }) => {
     }
   };
 
-  const labelStyle = { fontSize: 11, textTransform: "uppercase", letterSpacing: "0.5px", color: "#888", marginBottom: 3 };
-  const currentImg = Array.isArray(device.img) ? device.img[0] : device.img;
+  const currentImg = preview || (Array.isArray(device.img) ? device.img[0] : device.img);
 
   return (
-    <Modal show onHide={onHide} size="lg" centered>
-      <Modal.Header closeButton>
-        <Modal.Title>
-          Edit Device <span style={{ color: "#ffa500" }}>#{device.id}</span>
-        </Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <Form>
-          <Row className="mb-3">
-            <Col md={6}>
-              <Form.Label style={labelStyle}>Type</Form.Label>
-              <Dropdown>
-                <Dropdown.Toggle variant="outline-secondary" className="w-100">
-                  {selectedType.name || "Choose type"}
-                </Dropdown.Toggle>
-                <Dropdown.Menu style={{ maxHeight: 200, overflowY: "auto" }}>
-                  {types.map((t) => (
-                    <Dropdown.Item key={t.id} onClick={() => setSelectedType(t)}>
-                      {t.name}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
-            </Col>
-            <Col md={6}>
-              <Form.Label style={labelStyle}>Brand</Form.Label>
-              <Dropdown>
-                <Dropdown.Toggle variant="outline-secondary" className="w-100">
-                  {selectedBrand.name || "Choose brand"}
-                </Dropdown.Toggle>
-                <Dropdown.Menu style={{ maxHeight: 200, overflowY: "auto" }}>
-                  {brands.map((b) => (
-                    <Dropdown.Item key={b.id} onClick={() => setSelectedBrand(b)}>
-                      {b.name}
-                    </Dropdown.Item>
-                  ))}
-                </Dropdown.Menu>
-              </Dropdown>
-            </Col>
-          </Row>
+    <div className="cd-overlay" onClick={onHide}>
+      <div className="cd-modal" onClick={(e) => e.stopPropagation()}>
 
-          <Form.Group className="mb-2">
-            <Form.Label style={labelStyle}>Name</Form.Label>
-            <Form.Control
+        <div className="cd-header">
+          <span className="cd-title">
+            Edit Device <span className="cd-title-id">#{device.id}</span>
+          </span>
+          <button className="cd-close" onClick={onHide} aria-label="Close">
+            <MdClose />
+          </button>
+        </div>
+
+        <div className="cd-body">
+          <div className="cd-row-2">
+            <div className="cd-field">
+              <label className="cd-label">Type</label>
+              <select
+                className="cd-select"
+                value={selectedType?.id || ""}
+                onChange={(e) => {
+                  const t = types.find((t) => String(t.id) === e.target.value);
+                  if (t) setSelectedType(t);
+                }}
+              >
+                <option value="">Choose type</option>
+                {types.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="cd-field">
+              <label className="cd-label">Brand</label>
+              <select
+                className="cd-select"
+                value={selectedBrand?.id || ""}
+                onChange={(e) => {
+                  const b = brands.find((b) => String(b.id) === e.target.value);
+                  if (b) setSelectedBrand(b);
+                }}
+              >
+                <option value="">Choose brand</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="cd-field">
+            <label className="cd-label">Name</label>
+            <input
+              className="cd-input"
               placeholder="Device name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
-          </Form.Group>
+          </div>
 
-          <Form.Group className="mb-2">
-            <Form.Label style={labelStyle}>Description</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
+          <div className="cd-field">
+            <label className="cd-label">Description</label>
+            <textarea
+              className="cd-textarea"
               placeholder="Description"
+              rows={3}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
-          </Form.Group>
+          </div>
 
-          <Row className="mb-2">
-            <Col>
-              <Form.Group>
-                <Form.Label style={labelStyle}>Price ($)</Form.Label>
-                <Form.Control
-                  type="number"
-                  placeholder="0.00"
-                  value={price}
-                  min={0}
-                  onChange={(e) => setPrice(Number(e.target.value))}
-                />
-              </Form.Group>
-            </Col>
-            <Col>
-              <Form.Group>
-                <Form.Label style={labelStyle}>Sale (%)</Form.Label>
-                <Form.Control
-                  type="number"
-                  placeholder="0"
-                  value={sale}
-                  min={0}
-                  max={100}
-                  onChange={(e) => setSale(Number(e.target.value))}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-
-          <Form.Check
-            type="checkbox"
-            label="In Stock"
-            checked={inStock}
-            onChange={(e) => setInStock(e.target.checked)}
-            className="mb-3"
-          />
-
-          <Form.Group>
-            <Form.Label style={labelStyle}>Image</Form.Label>
-            <div className="d-flex align-items-center gap-3">
-              {currentImg && (
-                <img
-                  src={currentImg}
-                  alt="current"
-                  style={{ width: 64, height: 64, objectFit: "contain", border: "1px solid #eee", borderRadius: 8, flexShrink: 0 }}
-                />
-              )}
-              <Form.Control
-                type="file"
-                accept="image/*"
-                onChange={(e) => setFile(e.target.files[0])}
+          <div className="cd-row-2">
+            <div className="cd-field">
+              <label className="cd-label">Price ($)</label>
+              <input
+                className="cd-input"
+                type="number"
+                min={0}
+                placeholder="0.00"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
               />
             </div>
-          </Form.Group>
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="outline-secondary" onClick={onHide} disabled={saving}>
-          Cancel
-        </Button>
-        <Button variant="outline-success" onClick={handleSave} disabled={saving}>
-          {saving ? "Saving…" : "Save"}
-        </Button>
-      </Modal.Footer>
-    </Modal>
+            <div className="cd-field">
+              <label className="cd-label">Sale (%)</label>
+              <input
+                className="cd-input"
+                type="number"
+                min={0}
+                max={100}
+                placeholder="0"
+                value={sale}
+                onChange={(e) => setSale(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <label className="cd-checkbox-row">
+            <input
+              type="checkbox"
+              checked={inStock}
+              onChange={(e) => setInStock(e.target.checked)}
+            />
+            <span>In Stock</span>
+          </label>
+
+          <div className="cd-field">
+            <label className="cd-label">Image</label>
+            <label className="cd-upload">
+              {currentImg ? (
+                <img src={currentImg} alt="preview" className="cd-upload-preview" />
+              ) : (
+                <>
+                  <MdCloudUpload className="cd-upload-icon" />
+                  <span className="cd-upload-hint">Click to upload</span>
+                </>
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                className="cd-upload-input"
+                onChange={selectFile}
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="cd-footer">
+          <button className="cd-btn-cancel" onClick={onHide} disabled={saving}>
+            Cancel
+          </button>
+          <button
+            className="cd-btn-submit"
+            onClick={handleSave}
+            disabled={saving || !name.trim()}
+          >
+            {saving ? "Saving…" : "Save Changes"}
+          </button>
+        </div>
+
+      </div>
+    </div>
   );
 };
 
