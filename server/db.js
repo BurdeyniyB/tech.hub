@@ -8,17 +8,18 @@ module.exports = new Sequelize(
     dialect: "postgres",
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
-    // Render's managed Postgres presents a self-signed cert chain (no public CA
-    // bundle is published) — rejectUnauthorized: true fails with
-    // SELF_SIGNED_CERT_IN_CHAIN unless the exact server cert is pinned via
-    // DB_CA_CERT (PEM). Set DB_CA_CERT once deployed to fully verify the
-    // connection instead of falling back to unverified TLS.
+    // Certificate verification is always on. If the provider's cert isn't in
+    // Node's trust store (e.g. self-signed), set DB_CA_CERT (PEM) to pin it —
+    // never disable rejectUnauthorized, that allows a MITM to read credentials
+    // and query data in transit.
     dialectOptions:
       process.env.DB_SSL === "true"
         ? {
-            ssl: process.env.DB_CA_CERT
-              ? { require: true, rejectUnauthorized: true, ca: process.env.DB_CA_CERT }
-              : { require: true, rejectUnauthorized: false },
+            ssl: {
+              require: true,
+              rejectUnauthorized: true,
+              ca: process.env.DB_CA_CERT || undefined,
+            },
           }
         : {},
   }
