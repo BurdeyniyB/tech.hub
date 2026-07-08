@@ -2,6 +2,149 @@ const Router = require("express");
 const router = new Router();
 const OpenAI = require("openai");
 const checkRole = require("../middleware/checkRoleMiddleware");
+const analyticsTools = require("../services/analyticsTools");
+
+const TOOL_DEFINITIONS = [
+  {
+    type: "function",
+    function: {
+      name: "getProductOrderStats",
+      description: "Order count, units sold and revenue for products whose name matches a search term, within a date range",
+      parameters: {
+        type: "object",
+        properties: {
+          productName: { type: "string", description: "Full or partial product name to search for" },
+          startDate: { type: "string", description: "YYYY-MM-DD" },
+          endDate: { type: "string", description: "YYYY-MM-DD" },
+        },
+        required: ["productName", "startDate", "endDate"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getTopCustomers",
+      description: "Ranks customers by quantity purchased, total spend, or order count within a date range",
+      parameters: {
+        type: "object",
+        properties: {
+          startDate: { type: "string", description: "YYYY-MM-DD" },
+          endDate: { type: "string", description: "YYYY-MM-DD" },
+          metric: { type: "string", enum: ["quantity", "revenue", "orderCount"] },
+          limit: { type: "integer" },
+        },
+        required: ["startDate", "endDate", "metric"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getTopProducts",
+      description: "Ranks products by units sold, revenue, or order count within a date range, optionally filtered by brand or type",
+      parameters: {
+        type: "object",
+        properties: {
+          startDate: { type: "string", description: "YYYY-MM-DD" },
+          endDate: { type: "string", description: "YYYY-MM-DD" },
+          metric: { type: "string", enum: ["quantity", "revenue", "orderCount"] },
+          brandName: { type: "string" },
+          typeName: { type: "string" },
+          limit: { type: "integer" },
+        },
+        required: ["startDate", "endDate", "metric"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getRevenueSummary",
+      description: "Total revenue, order count, unique buyers and average order value for an arbitrary date range",
+      parameters: {
+        type: "object",
+        properties: {
+          startDate: { type: "string", description: "YYYY-MM-DD" },
+          endDate: { type: "string", description: "YYYY-MM-DD" },
+        },
+        required: ["startDate", "endDate"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getOrdersBreakdown",
+      description: "Groups orders by a dimension (status, country, state, payment method, delivery method, or day) within a date range",
+      parameters: {
+        type: "object",
+        properties: {
+          startDate: { type: "string", description: "YYYY-MM-DD" },
+          endDate: { type: "string", description: "YYYY-MM-DD" },
+          groupBy: { type: "string", enum: ["status", "country", "state_province", "payment", "delivery_method", "day"] },
+        },
+        required: ["startDate", "endDate", "groupBy"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getCustomerOrderHistory",
+      description: "Lists a specific customer's orders and purchased items, optionally within a date range",
+      parameters: {
+        type: "object",
+        properties: {
+          email: { type: "string" },
+          startDate: { type: "string", description: "YYYY-MM-DD" },
+          endDate: { type: "string", description: "YYYY-MM-DD" },
+          limit: { type: "integer" },
+        },
+        required: ["email"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getStockAlertDemand",
+      description: "Lists out-of-stock products ranked by number of customers waiting for a restock alert",
+      parameters: {
+        type: "object",
+        properties: { limit: { type: "integer" } },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "getRatingsSummary",
+      description: "Top or bottom rated products by average rating, with review counts",
+      parameters: {
+        type: "object",
+        properties: {
+          order: { type: "string", enum: ["highest", "lowest"] },
+          minReviews: { type: "integer" },
+          limit: { type: "integer" },
+        },
+        required: ["order"],
+      },
+    },
+  },
+];
+
+const TOOL_IMPLEMENTATIONS = {
+  getProductOrderStats: analyticsTools.getProductOrderStats,
+  getTopCustomers: analyticsTools.getTopCustomers,
+  getTopProducts: analyticsTools.getTopProducts,
+  getRevenueSummary: analyticsTools.getRevenueSummary,
+  getOrdersBreakdown: analyticsTools.getOrdersBreakdown,
+  getCustomerOrderHistory: analyticsTools.getCustomerOrderHistory,
+  getStockAlertDemand: analyticsTools.getStockAlertDemand,
+  getRatingsSummary: analyticsTools.getRatingsSummary,
+};
 
 router.post("/search", async (req, res) => {
   try {
@@ -61,23 +204,58 @@ router.post("/admin-chat", checkRole("ADMIN"), async (req, res) => {
       return res.status(400).json({ error: "Message is required" });
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const today = new Date().toISOString().slice(0, 10);
 
     const systemPrompt = `You are an AI business analyst for an electronics store admin panel.
 Help the admin understand store performance, identify trends, and make data-driven decisions.
 Be concise, specific, and actionable. Reference actual numbers when available.
+Today's date is ${today}. When the admin asks about a relative period ("this month", "last week", "today"), compute the exact startDate/endDate (YYYY-MM-DD) yourself before calling a tool.
+You have tools to query the live database for specific facts (product sales, top customers, order breakdowns, customer history, restock demand, ratings). Use them whenever the answer requires data more specific than the summary below — prefer calling a tool over guessing.
 ${stats ? buildStatsContext(stats) : ""}`;
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        ...history.slice(-10),
-        { role: "user", content: message },
-      ],
-      max_tokens: 600,
-    });
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...history.slice(-10),
+      { role: "user", content: message },
+    ];
 
-    res.json({ reply: response.choices[0].message.content });
+    let reply = null;
+    for (let round = 0; round < 4 && reply === null; round++) {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages,
+        tools: TOOL_DEFINITIONS,
+        tool_choice: "auto",
+        max_tokens: 600,
+      });
+
+      const choice = response.choices[0].message;
+
+      if (!choice.tool_calls?.length) {
+        reply = choice.content;
+        break;
+      }
+
+      messages.push(choice);
+
+      for (const call of choice.tool_calls) {
+        const impl = TOOL_IMPLEMENTATIONS[call.function.name];
+        let result;
+        try {
+          const args = JSON.parse(call.function.arguments || "{}");
+          result = impl ? await impl(args) : { error: "Unknown tool" };
+        } catch (err) {
+          result = { error: err.message };
+        }
+        messages.push({
+          role: "tool",
+          tool_call_id: call.id,
+          content: JSON.stringify(result),
+        });
+      }
+    }
+
+    res.json({ reply: reply || "Sorry, I couldn't come up with an answer. Try rephrasing your question." });
   } catch (err) {
     console.error("Admin AI chat error:", err.message);
     res.status(500).json({ error: "AI chat failed" });
