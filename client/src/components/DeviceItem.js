@@ -10,6 +10,7 @@ import { FaShoppingCart, FaStar, FaStarHalfAlt, FaRegStar, FaHeart, FaRegHeart, 
 import StockAlertForm from "./StockAlertForm";
 import Toast from "./Toast";
 import { useToast } from "../hooks/useToast";
+import { copyToClipboard } from "../utils/clipboard";
 
 const DeviceItem = observer(({ device }) => {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ const DeviceItem = observer(({ device }) => {
   const handleShare = (e) => {
     e.stopPropagation();
     const url = `${window.location.origin}${DEVICE_ROUTE}/${device.id}`;
-    navigator.clipboard.writeText(url).then(() => showToast("Link copied!"));
+    copyToClipboard(url).then(() => showToast("Link copied!"));
   };
   
   const addDeviceToBasket = async (e) => {

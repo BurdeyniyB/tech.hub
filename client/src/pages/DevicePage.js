@@ -13,6 +13,7 @@ import Toast from "../components/Toast";
 import { useToast } from "../hooks/useToast";
 import { FaShareAlt } from "react-icons/fa";
 import { DEVICE_ROUTE } from "../utils/const";
+import { copyToClipboard } from "../utils/clipboard";
 import "../style/DevicePage.css";
 
 const EXCLUDED_SPEC_KEYS = new Set([
@@ -108,7 +109,7 @@ const DevicePage = observer(() => {
 
   const handleShare = () => {
     const url = `${window.location.origin}${DEVICE_ROUTE}/${id}`;
-    navigator.clipboard.writeText(url).then(() => showToast("Link copied!"));
+    copyToClipboard(url).then(() => showToast("Link copied!"));
   };
 
   return (
